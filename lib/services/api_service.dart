@@ -8,7 +8,7 @@ import '../models/pregunta.dart';
 
 class ApiService {
   // Usa SIEMPRE la IP del WiFi real
-  static const String baseUrl = "http://192.168.6.205/encuestas/encuestas_api";
+  static const String baseUrl = "http://192.168.1.65/encuestas/encuestas_api";
 
   // -------------------------------------------------------
   // 1. Descargar preguntas
@@ -20,13 +20,18 @@ class ApiService {
       final res = await http.get(uri).timeout(const Duration(seconds: 10));
 
       if (res.statusCode == 200) {
-        final List data = jsonDecode(res.body);
-        return data
-            .map((e) => Pregunta.fromJson(Map<String, dynamic>.from(e)))
-            .toList();
+        try {
+          final List data = jsonDecode(res.body);
+          return data
+              .map((e) => Pregunta.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+        } catch (e) {
+          final bodySnippet = res.body.length > 500 ? res.body.substring(0, 500) + '...' : res.body;
+          throw Exception('Error al parsear JSON: $e. Response body (trunc): $bodySnippet');
+        }
       } else {
-        throw Exception(
-            "HTTP ${res.statusCode} al descargar preguntas");
+        final bodySnippet = res.body.length > 200 ? res.body.substring(0, 200) + '...' : res.body;
+        throw Exception('HTTP ${res.statusCode} al descargar preguntas. Response body (trunc): $bodySnippet');
       }
     } catch (e) {
       throw Exception("Error al descargar preguntas: $e");
