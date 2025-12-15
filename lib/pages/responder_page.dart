@@ -241,8 +241,12 @@ class _ResponderPageState extends State<ResponderPage> {
     }
 
     final dimensiones = preguntasPorDimension.keys.toList();
-    final dimKey = dimensiones[paginaActual];
-    final lista = preguntasPorDimension[dimKey]!;
+    final totalPages = 1 + dimensiones.length; // page 0 = productor, following pages = dimensiones
+    final bool isProductPage = paginaActual == 0;
+    final lista = isProductPage
+      ? <Pregunta>[]
+      : preguntasPorDimension[dimensiones[paginaActual - 1]]!;
+    final dimKey = isProductPage ? null : dimensiones[paginaActual - 1];
 
     return Scaffold(
       appBar: AppBar(title: const Text('Responder Encuesta')),
@@ -250,7 +254,7 @@ class _ResponderPageState extends State<ResponderPage> {
         padding: const EdgeInsets.all(12.0),
         child: ListView(
           children: [
-            if (paginaActual == 0) ...[
+            if (isProductPage) ...[
               const Text('Datos del Productor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               _textField('Estado', 'estado'),
@@ -274,7 +278,7 @@ class _ResponderPageState extends State<ResponderPage> {
               _textField('¿Cuál apoyo?', 'apoyo_cual'),
               const SizedBox(height: 12),
             ],
-            Text('Dimensión: $dimKey', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            if (!isProductPage) Text('Dimensión: $dimKey', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const Divider(),
             ...lista.map((p) {
               return Column(
@@ -314,9 +318,9 @@ class _ResponderPageState extends State<ResponderPage> {
               children: [
                 if (paginaActual > 0)
                   ElevatedButton.icon(onPressed: () => setState(() => paginaActual--), icon: const Icon(Icons.arrow_back), label: const Text('Anterior')),
-                if (paginaActual < dimensiones.length - 1)
+                if (paginaActual < totalPages - 1)
                   ElevatedButton.icon(onPressed: () => setState(() => paginaActual++), icon: const Icon(Icons.arrow_forward), label: const Text('Siguiente')),
-                if (paginaActual == dimensiones.length - 1)
+                if (paginaActual == totalPages - 1)
                   ElevatedButton.icon(onPressed: guardarEncuestaLocal, icon: const Icon(Icons.save), label: const Text('Guardar'), style: ElevatedButton.styleFrom(backgroundColor: Colors.green)),
               ],
             ),
