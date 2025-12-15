@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/json_storage.dart';
+import '../services/question_storage.dart';
 import '../models/pregunta.dart';
 import 'responder_page.dart';
 
@@ -22,6 +23,19 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _actualizarPendientesCount();
+    _loadCachedQuestions();
+  }
+
+  Future<void> _loadCachedQuestions() async {
+    try {
+      final all = await QuestionStorage.readAll();
+      if (all.isEmpty) return;
+      final list = all.map((m) => Pregunta.fromJson(m)).toList();
+      setState(() => preguntas = list);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Preguntas cargadas desde caché (${preguntas.length})')),
+      );
+    } catch (_) {}
   }
 
   Future<void> _actualizarPendientesCount() async {
@@ -34,9 +48,15 @@ class _HomePageState extends State<HomePage> {
     try {
       final list = await ApiService.descargarPreguntas();
       setState(() => preguntas = list);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Formulario descargado (${preguntas.length} preguntas)')),
-      );
+      // Guardar en caché como JSON para lectura en reinicios
+      try {
+        await QuestionStorage.writeAll(list.map((p) => p.toMap()).toList());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Formulario descargado y guardado (${preguntas.length} preguntas)')),
+        );
+      } catch (_) {
+        // ignore file write errors
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al descargar preguntas: $e')),
